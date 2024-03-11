@@ -1,0 +1,23 @@
+@page "/authentication/{action}"
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@using Microsoft.Extensions.Configuration
+@using System.Web
+
+@inject NavigationManager Navigation
+@inject IConfiguration Configuration
+
+<RemoteAuthenticatorView Action="@Action">
+    <LogOut>
+        @{
+            var authority = (string)Configuration["Auth0:Authority"];
+            var clientId = (string)Configuration["Auth0:ClientId"];
+            var logoutReturnUrl = Navigation.ToAbsoluteUri("/").ToString(); // Homepage, add it to your Auth0 application's Allowed Logout URLs to make redirect work
+
+	        Navigation.NavigateTo($"{authority}/v2/logout?client_id={clientId}&returnTo={HttpUtility.UrlEncode(logoutReturnUrl)}");
+        }
+    </LogOut>
+</RemoteAuthenticatorView>
+
+@code{
+    [Parameter] public string Action { get; set; }
+}

@@ -1,0 +1,93 @@
+﻿@page "/fetchdata"
+@attribute [Authorize]
+
+@using BlazorWebAssemblyHosted.Shared
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@inject HttpClient Http
+
+<PageTitle>Weather forecast</PageTitle>
+
+<h1>Weather forecast</h1>
+
+<p>Hello @Username!</p>
+<p>This component demonstrates fetching data from the server in an authenticated context.</p>
+
+<p>The user has the following claims:</p>
+<table style="margin-bottom: 40px">
+	<thead>
+	<tr>
+		<th>Claim name</th>
+		<th>Value</th>
+	</tr>
+	</thead>
+	<tbody>
+	@foreach (var claim in Claims)
+	{
+		<tr>
+			<td>@claim.Key</td>
+			<td>@claim.Value</td>
+		</tr>
+	}
+	</tbody>
+</table>
+
+@if (forecasts == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Temp. (C)</th>
+                <th>Temp. (F)</th>
+                <th>Summary</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var forecast in forecasts)
+            {
+                <tr>
+                    <td>@forecast.Date.ToShortDateString()</td>
+                    <td>@forecast.TemperatureC</td>
+                    <td>@forecast.TemperatureF</td>
+                    <td>@forecast.Summary</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private WeatherForecast[]? forecasts;
+
+    [CascadingParameter]
+    private Task<AuthenticationState>? authenticationState { get; set; }
+
+    private Dictionary<string, string> Claims { get; set; } = new();
+
+    private string Username = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+		// Set username from the authentication state
+	    if (authenticationState is not null)
+	    {
+		    var state = await authenticationState;
+
+		    Username = state?.User?.Identity?.Name ?? string.Empty;
+		    Claims = state?.User?.Claims?.Where(c => c.Type != null).ToDictionary(c => c.Type, c => c.Value);
+	    }
+
+        try
+        {
+            forecasts = await Http.GetFromJsonAsync<WeatherForecast[]>("weatherforecast");
+        }
+        catch (AccessTokenNotAvailableException exception)
+        {
+            exception.Redirect();
+        }
+    }
+}
